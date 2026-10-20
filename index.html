@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Workspace - Quản lý Tài liệu & Ghi chú Công việc</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.7); }
+    </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-200 antialiased flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Mobile Header -->
+    <div class="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center z-20">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-folder-closed text-brand-600 text-2xl"></i>
+            <span class="font-bold text-lg text-slate-900 dark:text-white">Work Workspace</span>
+        </div>
+        <button id="mobileMenuBtn" class="p-2 text-slate-600 dark:text-slate-300 hover:text-brand-600 focus:outline-none">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Backdrop for Mobile -->
+    <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 hidden md:hidden"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shrink-0">
+        <div class="p-5 border-b border-slate-200 dark:border-slate-700 hidden md:flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold shadow-md shadow-brand-500/20">
+                    <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 dark:text-white leading-tight">Work Workspace</h1>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Hệ thống Quản lý Tài liệu</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <button id="btnAddNew" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-medium shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 transition duration-150 transform active:scale-95">
+                <i class="fa-solid fa-plus"></i>
+                <span>Tạo mới / Tải lên</span>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-4 py-2 space-y-6">
+            <div>
+                <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 block mb-2">Xem nhanh</span>
+                <nav class="space-y-1">
+                    <button class="nav-filter-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition font-medium active" data-filter-type="all">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-border-all text-slate-400 w-5"></i>
+                            <span>Tất cả mục</span>
+                        </div>
+                        <span id="badgeAllCount" class="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">0</span>
+                    </button>
+                    <button class="nav-filter-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition font-medium" data-filter-type="type" data-filter-val="note">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-file-lines text-blue-500 w-5"></i>
+                            <span>Ghi chú & Văn bản</span>
+                        </div>
+                        <span id="badgeNotesCount" class="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">0</span>
+                    </button>
+                    <button class="nav-filter-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition font-medium" data-filter-type="type" data-filter-val="file">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-folder-open text-amber-500 w-5"></i>
+                            <span>Tệp & Tài liệu</span>
+                        </div>
+                        <span id="badgeFilesCount" class="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between px-3 mb-2">
+                    <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Danh mục / Dự án</span>
+                    <button id="btnCreateCategory" class="text-slate-400 hover:text-brand-600 text-sm p-1 rounded transition" title="Thêm danh mục mới">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                <nav id="categoryList" class="space-y-1"></nav>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+            <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700/40">
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-300">Giao diện</span>
+                <button id="themeToggleBtn" class="p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 shadow-sm transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:inline"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button id="btnExportData" class="text-xs py-2 px-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Xuất dữ liệu</span>
+                </button>
+                <button id="btnImportData" class="text-xs py-2 px-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>Nhập dữ liệu</span>
+                </button>
+                <input type="file" id="importFileInput" accept=".json" class="hidden">
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-900">
+        <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 px-6 flex flex-col sm:flex-row gap-4 items-center justify-between shrink-0">
+            <div class="relative w-full sm:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm tài liệu, tệp, nội dung..." 
+                    class="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-700/50 border border-transparent dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 transition">
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <select id="priorityFilter" class="bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl text-xs py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-brand-500">
+                    <option value="all">Tất cả độ ưu tiên</option>
+                    <option value="high">Ưu tiên Cao</option>
+                    <option value="medium">Ưu tiên Trung bình</option>
+                    <option value="low">Ưu tiên Thấp</option>
+                </select>
+
+                <select id="sortOrder" class="bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl text-xs py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-brand-500">
+                    <option value="newest">Mới nhất trước</option>
+                    <option value="oldest">Cũ nhất trước</option>
+                    <option value="title">Tên A-Z</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="px-6 py-3 flex justify-between items-center border-b border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-800/40 backdrop-blur-xs">
+            <div class="flex items-center gap-2">
+                <h2 id="currentFilterTitle" class="text-base font-semibold text-slate-800 dark:text-slate-100">Tất cả mục</h2>
+                <span id="totalItemsBadge" class="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">0</span>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <div id="emptyState" class="hidden flex-col items-center justify-center h-64 text-center">
+                <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-2xl mb-3">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-700 dark:text-slate-300">Không tìm thấy tài liệu nào</h3>
+                <p class="text-xs text-slate-400 max-w-sm mt-1">Chưa có dữ liệu nào phù hợp với bộ lọc hiện tại hoặc dữ liệu trống. Hãy nhấn "Tạo mới / Tải lên" để bắt đầu.</p>
+            </div>
+
+            <div id="itemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        </div>
+    </main>
+
+    <!-- Modal Form: Add / Edit Item -->
+    <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transform transition-all border border-slate-200 dark:border-slate-700">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800 dark:text-slate-100">Thêm ghi chú hoặc Tệp mới</h3>
+                <button class="closeModalBtn text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 flex-1">
+                <div class="flex p-1 bg-slate-100 dark:bg-slate-700/60 rounded-xl" id="typeTabGroup">
+                    <button type="button" id="tabNoteBtn" class="flex-1 py-2 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 shadow-sm text-brand-600 dark:text-brand-400 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-pen-to-square"></i> Ghi chú Văn bản
+                    </button>
+                    <button type="button" id="tabFileBtn" class="flex-1 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Tải lên Tệp / Files
+                    </button>
+                </div>
+
+                <form id="itemForm" class="space-y-4">
+                    <input type="hidden" id="itemId">
+                    <input type="hidden" id="itemType" value="note">
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Tiêu đề / Tên bài lưu trữ <span class="text-red-500">*</span></label>
+                        <input type="text" id="inputTitle" required placeholder="Nhập tiêu đề ghi chú hoặc thư mục tài liệu..." 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-brand-500 transition">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Danh mục / Dự án</label>
+                            <select id="selectCategory" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-brand-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Mức độ ưu tiên</label>
+                            <select id="selectPriority" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+                                <option value="low">Thấp</option>
+                                <option value="medium" selected>Trung bình</option>
+                                <option value="high">Cao</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="noteContentArea">
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Nội dung chi tiết</label>
+                        <textarea id="inputContent" rows="5" placeholder="Soạn thảo nội dung ghi chú, báo cáo, ý tưởng công việc..." 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-brand-500 transition"></textarea>
+                    </div>
+
+                    <!-- Multiple Files Upload Area -->
+                    <div id="fileUploadArea" class="hidden">
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Tệp đính kèm (Cho phép chọn nhiều file)</label>
+                        <div id="dropZone" class="border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-brand-500 dark:hover:border-brand-500 rounded-2xl p-6 text-center cursor-pointer bg-slate-50 dark:bg-slate-900/30 transition">
+                            <i class="fa-solid fa-file-arrow-up text-3xl text-slate-400 mb-2"></i>
+                            <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Kéo & Thả các tệp vào đây, hoặc <span class="text-brand-600 underline">chọn từ máy tính</span></p>
+                            <p class="text-xs text-slate-400 mt-1">Hỗ trợ Hình ảnh, PDF, Word, Excel, Text, Audio, Video, ZIP,...</p>
+                            <input type="file" id="fileInput" multiple class="hidden">
+                        </div>
+
+                        <!-- Selected Files List -->
+                        <div id="filesListContainer" class="mt-3 space-y-2 max-h-48 overflow-y-auto"></div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Thẻ / Tags (Phân cách bằng dấu phẩy)</label>
+                        <input type="text" id="inputTags" placeholder="Ví dụ: Quan trọng, Báo cáo Q3, Thiết kế..." 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-brand-500 transition">
+                    </div>
+                </form>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+                <button type="button" class="closeModalBtn px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Hủy</button>
+                <button id="btnSaveItem" type="button" class="px-5 py-2 rounded-xl text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20 transition">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: View Detail Card -->
+    <div id="viewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-start">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span id="viewPriorityBadge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase">Cao</span>
+                        <span id="viewCategoryBadge" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">Công việc</span>
+                    </div>
+                    <h3 id="viewTitle" class="text-xl font-bold text-slate-900 dark:text-white">Chi tiết tài liệu</h3>
+                    <p id="viewMeta" class="text-xs text-slate-400">Tạo ngày: --/--/----</p>
+                </div>
+                <button class="closeViewModalBtn text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <!-- Attached Files Section -->
+                <div id="viewFilesSection" class="hidden space-y-2">
+                    <h4 class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Danh sách tệp đính kèm</h4>
+                    <div id="viewFilesList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                </div>
+
+                <!-- Text Content Display -->
+                <div id="viewTextContent" class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50"></div>
+
+                <div id="viewTagsContainer" class="flex flex-wrap gap-1.5 pt-2"></div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-700 flex justify-end items-center gap-2">
+                <button id="btnEditFromView" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition flex items-center gap-2">
+                    <i class="fa-solid fa-pen"></i> Chỉnh sửa
+                </button>
+                <button class="closeViewModalBtn px-4 py-2 rounded-xl text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white transition">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: File Preview Modal (Direct View for Image/PDF/Text/Audio/Video) -->
+    <div id="previewModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div class="p-4 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3 truncate">
+                    <span id="previewFileIcon" class="text-xl text-brand-600"></span>
+                    <div class="truncate">
+                        <h3 id="previewFileName" class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">File Name</h3>
+                        <p id="previewFileSize" class="text-[11px] text-slate-400">0 KB</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btnPreviewDownload" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Tải về
+                    </button>
+                    <button id="closePreviewBtn" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="previewBody" class="flex-1 bg-slate-900/90 flex items-center justify-center p-4 overflow-auto relative">
+                <!-- Dynamic Content (Image, PDF iframe, Video, Audio, or Text Code box) -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form: Add / Edit Category -->
+    <div id="categoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Quản lý Danh mục</h3>
+                <button class="closeCatModalBtn text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Tên danh mục <span class="text-red-500">*</span></label>
+                    <input type="text" id="inputCatName" placeholder="Ví dụ: Báo cáo tài chính, Dự án B..." 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Màu nhận diện</label>
+                    <div class="flex gap-2" id="colorPickerContainer">
+                        <button type="button" data-color="#3b82f6" class="w-8 h-8 rounded-full bg-blue-500 ring-2 ring-offset-2 ring-brand-500 transition"></button>
+                        <button type="button" data-color="#10b981" class="w-8 h-8 rounded-full bg-emerald-500 transition"></button>
+                        <button type="button" data-color="#f59e0b" class="w-8 h-8 rounded-full bg-amber-500 transition"></button>
+                        <button type="button" data-color="#ef4444" class="w-8 h-8 rounded-full bg-red-500 transition"></button>
+                        <button type="button" data-color="#8b5cf6" class="w-8 h-8 rounded-full bg-purple-500 transition"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+                <button class="closeCatModalBtn px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300">Hủy</button>
+                <button id="btnSaveCategory" class="px-5 py-2 rounded-xl text-sm font-medium bg-brand-600 text-white">Lưu danh mục</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Core Logic Script -->
+    <script>
+        const DB_NAME = 'WorkWorkspaceDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        const state = {
+            items: [],
+            categories: [],
+            activeFilter: { type: 'all', val: null },
+            priorityFilter: 'all',
+            searchQuery: '',
+            sortOrder: 'newest',
+            selectedFiles: [], // Array of file objects for multiple upload
+            editingItemId: null,
+            selectedColor: '#3b82f6',
+            currentPreviewFile: null
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            await initDB();
+            await loadInitialData();
+            setupEventListeners();
+            renderApp();
+        });
+
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains('items')) db.createObjectStore('items', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('categories')) db.createObjectStore('categories', { keyPath: 'id' });
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(); };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        function getAllFromStore(storeName) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const store = tx.objectStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
+            });
+        }
+
+        function saveToStore(storeName, item) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                const request = store.put(item);
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        function deleteFromStore(storeName, id) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+            });
+        }
+
+        async function loadInitialData() {
+            state.categories = await getAllFromStore('categories');
+            state.items = await getAllFromStore('items');
+
+            if (state.categories.length === 0) {
+                const defaultCats = [
+                    { id: 'cat_1', name: 'Công việc chung', color: '#3b82f6' },
+                    { id: 'cat_2', name: 'Dự án A', color: '#10b981' },
+                    { id: 'cat_3', name: 'Tài liệu Cá nhân', color: '#8b5cf6' }
+                ];
+                for (let cat of defaultCats) await saveToStore('categories', cat);
+                state.categories = defaultCats;
+            }
+
+            if (state.items.length === 0) {
+                const sampleItem = {
+                    id: 'item_' + Date.now(),
+                    type: 'note',
+                    title: 'Chào mừng bạn đến với Work Workspace!',
+                    categoryId: 'cat_1',
+                    priority: 'high',
+                    content: 'Hệ thống hỗ trợ lưu trữ bài viết, ghi chú và quản lý NHIỀU TỆP ĐÍNH KÈM với trình xem trước trực tiếp.',
+                    tags: ['Hướng dẫn', 'Chào mừng'],
+                    files: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                await saveToStore('items', sampleItem);
+                state.items = [sampleItem];
+            }
+        }
+
+        function renderApp() {
+            renderCategories();
+            renderItems();
+            updateBadges();
+        }
+
+        function renderCategories() {
+            const catContainer = document.getElementById('categoryList');
+            const catSelect = document.getElementById('selectCategory');
+            catContainer.innerHTML = '';
+            catSelect.innerHTML = '<option value="">-- Không phân loại --</option>';
+
+            state.categories.forEach(cat => {
+                const isActive = state.activeFilter.type === 'category' && state.activeFilter.val === cat.id;
+                const catCount = state.items.filter(i => i.categoryId === cat.id).length;
+
+                const btn = document.createElement('div');
+                btn.className = `group w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition cursor-pointer ${
+                    isActive ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`;
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2.5 truncate" onclick="setFilter('category', '${cat.id}')">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${cat.color}"></span>
+                        <span class="truncate">${escapeHtml(cat.name)}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs text-slate-400 opacity-80">${catCount}</span>
+                        <button onclick="event.stopPropagation(); deleteCategory('${cat.id}')" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 p-1 transition" title="Xóa">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                catContainer.appendChild(btn);
+
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                catSelect.appendChild(option);
+            });
+        }
+
+        function renderItems() {
+            const itemsGrid = document.getElementById('itemsGrid');
+            const emptyState = document.getElementById('emptyState');
+            itemsGrid.innerHTML = '';
+
+            let filtered = state.items.filter(item => {
+                if (state.activeFilter.type === 'type' && item.type !== state.activeFilter.val) return false;
+                if (state.activeFilter.type === 'category' && item.categoryId !== state.activeFilter.val) return false;
+                if (state.priorityFilter !== 'all' && item.priority !== state.priorityFilter) return false;
+
+                if (state.searchQuery.trim() !== '') {
+                    const q = state.searchQuery.toLowerCase();
+                    const titleMatch = item.title.toLowerCase().includes(q);
+                    const contentMatch = item.content ? item.content.toLowerCase().includes(q) : false;
+                    const fileMatch = item.files ? item.files.some(f => f.fileName.toLowerCase().includes(q)) : false;
+                    const tagMatch = item.tags ? item.tags.some(t => t.toLowerCase().includes(q)) : false;
+                    if (!titleMatch && !contentMatch && !fileMatch && !tagMatch) return false;
+                }
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (state.sortOrder === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+                if (state.sortOrder === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+                if (state.sortOrder === 'title') return a.title.localeCompare(b.title);
+                return 0;
+            });
+
+            document.getElementById('totalItemsBadge').textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                filtered.forEach(item => itemsGrid.appendChild(createItemCard(item)));
+            }
+        }
+
+        function createItemCard(item) {
+            const card = document.createElement('div');
+            card.className = "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between hover:shadow-lg transition duration-200 group";
+
+            const cat = state.categories.find(c => c.id === item.categoryId);
+            const catName = cat ? cat.name : 'Chưa phân loại';
+            const catColor = cat ? cat.color : '#94a3b8';
+
+            const priorityColors = {
+                high: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+                medium: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+                low: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+            };
+            const priorityLabel = { high: 'Ưu tiên Cao', medium: 'Trung bình', low: 'Thấp' };
+
+            const tagsHtml = (item.tags || []).map(t => `<span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">#${escapeHtml(t)}</span>`).join(' ');
+
+            let bodyPreviewHtml = '';
+            if (item.type === 'note') {
+                bodyPreviewHtml = `<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 mt-2 leading-relaxed">${escapeHtml(item.content || 'Không có nội dung.')}</p>`;
+            } else {
+                const filesCount = (item.files || []).length;
+                const firstImg = (item.files || []).find(f => f.fileType && f.fileType.startsWith('image/'));
+
+                if (firstImg && firstImg.fileData) {
+                    bodyPreviewHtml = `
+                        <div class="mt-2.5 h-28 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 relative">
+                            <img src="${firstImg.fileData}" alt="${escapeHtml(firstImg.fileName)}" class="w-full h-full object-cover">
+                            ${filesCount > 1 ? `<span class="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-xs">+${filesCount - 1} tệp</span>` : ''}
+                        </div>
+                    `;
+                } else {
+                    bodyPreviewHtml = `
+                        <div class="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                            <div class="flex items-center gap-2.5 truncate">
+                                <i class="fa-solid fa-folder-closed text-amber-500 text-lg"></i>
+                                <span class="text-xs font-medium text-slate-700 dark:text-slate-300">${filesCount} Tệp đính kèm</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400">Xem thêm</span>
+                        </div>
+                    `;
+                }
+            }
+
+            card.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-1.5 truncate">
+                            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${catColor}"></span>
+                            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">${escapeHtml(catName)}</span>
+                        </div>
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${priorityColors[item.priority] || priorityColors.low}">${priorityLabel[item.priority]}</span>
+                    </div>
+
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm group-hover:text-brand-600 dark:group-hover:text-brand-400 transition cursor-pointer line-clamp-2" onclick="openViewModal('${item.id}')">
+                        <i class="${item.type === 'note' ? 'fa-regular fa-file-lines text-blue-500' : 'fa-solid fa-paperclip text-amber-500'} mr-1"></i>
+                        ${escapeHtml(item.title)}
+                    </h4>
+
+                    ${bodyPreviewHtml}
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] text-slate-400">${formatDate(item.createdAt)}</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openViewModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 rounded transition" title="Xem chi tiết">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+                            <button onclick="editItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 rounded transition" title="Sửa">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button onclick="deleteItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-red-500 rounded transition" title="Xóa">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    ${tagsHtml ? `<div class="flex flex-wrap gap-1">${tagsHtml}</div>` : ''}
+                </div>
+            `;
+            return card;
+        }
+
+        function updateBadges() {
+            document.getElementById('badgeAllCount').textContent = state.items.length;
+            document.getElementById('badgeNotesCount').textContent = state.items.filter(i => i.type === 'note').length;
+            document.getElementById('badgeFilesCount').textContent = state.items.filter(i => i.type === 'file').length;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const mobileBtn = document.getElementById('mobileMenuBtn');
+
+            const toggleMobileSidebar = () => {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            };
+
+            mobileBtn.addEventListener('click', toggleMobileSidebar);
+            backdrop.addEventListener('click', toggleMobileSidebar);
+
+            document.getElementById('btnAddNew').addEventListener('click', () => openModal());
+
+            document.getElementById('searchInput').addEventListener('input', (e) => { state.searchQuery = e.target.value; renderItems(); });
+            document.getElementById('priorityFilter').addEventListener('change', (e) => { state.priorityFilter = e.target.value; renderItems(); });
+            document.getElementById('sortOrder').addEventListener('change', (e) => { state.sortOrder = e.target.value; renderItems(); });
+
+            document.querySelectorAll('.nav-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-filter-btn').forEach(b => b.classList.remove('active', 'bg-slate-100', 'dark:bg-slate-700/50', 'text-brand-600'));
+                    btn.classList.add('active', 'bg-slate-100', 'dark:bg-slate-700/50', 'text-brand-600');
+                    setFilter(btn.getAttribute('data-filter-type'), btn.getAttribute('data-filter-val'));
+                });
+            });
+
+            // Tabs toggle
+            const tabNoteBtn = document.getElementById('tabNoteBtn');
+            const tabFileBtn = document.getElementById('tabFileBtn');
+            const noteContentArea = document.getElementById('noteContentArea');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            const itemTypeInput = document.getElementById('itemType');
+
+            tabNoteBtn.addEventListener('click', () => {
+                itemTypeInput.value = 'note';
+                tabNoteBtn.className = 'flex-1 py-2 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 shadow-sm text-brand-600 dark:text-brand-400 transition flex items-center justify-center gap-2';
+                tabFileBtn.className = 'flex-1 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 transition flex items-center justify-center gap-2';
+                noteContentArea.classList.remove('hidden');
+                fileUploadArea.classList.add('hidden');
+            });
+
+            tabFileBtn.addEventListener('click', () => {
+                itemTypeInput.value = 'file';
+                tabFileBtn.className = 'flex-1 py-2 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 shadow-sm text-brand-600 dark:text-brand-400 transition flex items-center justify-center gap-2';
+                tabNoteBtn.className = 'flex-1 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 transition flex items-center justify-center gap-2';
+                fileUploadArea.classList.remove('hidden');
+                noteContentArea.classList.add('hidden');
+            });
+
+            // Multiple Files Upload Drag & Drop
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-brand-500', 'bg-brand-50/50'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-brand-500', 'bg-brand-50/50'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-brand-500', 'bg-brand-50/50');
+                if (e.dataTransfer.files.length > 0) handleMultipleFilesSelect(e.dataTransfer.files);
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleMultipleFilesSelect(e.target.files);
+            });
+
+            // Close Modals
+            document.querySelectorAll('.closeModalBtn').forEach(b => b.addEventListener('click', closeModal));
+            document.querySelectorAll('.closeViewModalBtn').forEach(b => b.addEventListener('click', closeViewModal));
+            document.querySelectorAll('.closeCatModalBtn').forEach(b => b.addEventListener('click', closeCatModal));
+            document.getElementById('closePreviewBtn').addEventListener('click', closePreviewModal);
+
+            document.getElementById('btnSaveItem').addEventListener('click', saveItemHandler);
+            document.getElementById('btnCreateCategory').addEventListener('click', openCatModal);
+            document.getElementById('btnSaveCategory').addEventListener('click', saveCategoryHandler);
+
+            document.querySelectorAll('#colorPickerContainer button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('#colorPickerContainer button').forEach(b => b.classList.remove('ring-2', 'ring-offset-2', 'ring-brand-500'));
+                    e.target.classList.add('ring-2', 'ring-offset-2', 'ring-brand-500');
+                    state.selectedColor = e.target.getAttribute('data-color');
+                });
+            });
+
+            document.getElementById('btnExportData').addEventListener('click', exportData);
+            document.getElementById('btnImportData').addEventListener('click', () => document.getElementById('importFileInput').click());
+            document.getElementById('importFileInput').addEventListener('change', importData);
+        }
+
+        function setFilter(type, val) {
+            state.activeFilter = { type, val };
+            const titleEl = document.getElementById('currentFilterTitle');
+            if (type === 'all') titleEl.textContent = 'Tất cả mục';
+            else if (type === 'type' && val === 'note') titleEl.textContent = 'Ghi chú & Văn bản';
+            else if (type === 'type' && val === 'file') titleEl.textContent = 'Tệp & Tài liệu';
+            else if (type === 'category') {
+                const cat = state.categories.find(c => c.id === val);
+                titleEl.textContent = cat ? `Danh mục: ${cat.name}` : 'Danh mục';
+            }
+            renderApp();
+        }
+
+        /* --- Multiple File Handling --- */
+        function handleMultipleFilesSelect(fileList) {
+            Array.from(fileList).forEach(file => {
+                if (file.size > 20 * 1024 * 1024) {
+                    showToast(`Tệp "${file.name}" vượt quá 20MB.`, 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.selectedFiles.push({
+                        id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        fileName: file.name,
+                        fileSize: file.size,
+                        fileType: file.type || 'application/octet-stream',
+                        fileData: e.target.result
+                    });
+                    renderSelectedFilesList();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            const titleInput = document.getElementById('inputTitle');
+            if (!titleInput.value && fileList.length > 0) {
+                titleInput.value = fileList.length === 1 ? fileList[0].name : `Thư mục ${fileList.length} tệp đính kèm`;
+            }
+        }
+
+        function renderSelectedFilesList() {
+            const container = document.getElementById('filesListContainer');
+            container.innerHTML = '';
+
+            state.selectedFiles.forEach((file, index) => {
+                const fileRow = document.createElement('div');
+                fileRow.className = "p-2.5 bg-slate-100 dark:bg-slate-700/50 rounded-xl flex items-center justify-between text-xs";
+                fileRow.innerHTML = `
+                    <div class="flex items-center gap-3 truncate">
+                        <div class="text-lg text-brand-600 dark:text-brand-400">
+                            <i class="${getFileIconClass(file.fileType, file.fileName)}"></i>
+                        </div>
+                        <div class="truncate">
+                            <p class="font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(file.fileName)}</p>
+                            <p class="text-[10px] text-slate-400">${formatFileSize(file.fileSize)}</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeSelectedFile('${file.id}')" class="text-slate-400 hover:text-red-500 p-1 transition">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                container.appendChild(fileRow);
+            });
+        }
+
+        function removeSelectedFile(fileId) {
+            state.selectedFiles = state.selectedFiles.filter(f => f.id !== fileId);
+            renderSelectedFilesList();
+        }
+
+        /* --- Item Save / Edit --- */
+        async function saveItemHandler() {
+            const title = document.getElementById('inputTitle').value.trim();
+            const type = document.getElementById('itemType').value;
+            const categoryId = document.getElementById('selectCategory').value;
+            const priority = document.getElementById('selectPriority').value;
+            const content = document.getElementById('inputContent').value;
+            const tags = document.getElementById('inputTags').value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+            if (!title) {
+                showToast('Vui lòng nhập tiêu đề.', 'error');
+                return;
+            }
+
+            if (type === 'file' && state.selectedFiles.length === 0) {
+                showToast('Vui lòng chọn ít nhất một tệp đính kèm.', 'error');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            let itemObj = {
+                id: state.editingItemId || 'item_' + Date.now(),
+                type,
+                title,
+                categoryId,
+                priority,
+                content: type === 'note' ? content : '',
+                files: type === 'file' ? state.selectedFiles : [],
+                tags,
+                updatedAt: now
+            };
+
+            if (state.editingItemId) {
+                const existing = state.items.find(i => i.id === state.editingItemId);
+                itemObj.createdAt = existing.createdAt;
+            } else {
+                itemObj.createdAt = now;
+            }
+
+            await saveToStore('items', itemObj);
+            state.items = await getAllFromStore('items');
+            closeModal();
+            renderApp();
+            showToast(state.editingItemId ? 'Đã cập nhật tài liệu!' : 'Đã lưu tài liệu mới thành công!');
+        }
+
+        async function deleteItem(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa bài lưu trữ này?')) {
+                await deleteFromStore('items', id);
+                state.items = state.items.filter(i => i.id !== id);
+                renderApp();
+                showToast('Đã xóa tài liệu!');
+            }
+        }
+
+        function editItem(id) {
+            const item = state.items.find(i => i.id === id);
+            if (!item) return;
+
+            state.editingItemId = id;
+            state.selectedFiles = item.files ? [...item.files] : [];
+
+            document.getElementById('modalTitle').textContent = 'Chỉnh sửa tài liệu';
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('inputTitle').value = item.title;
+            document.getElementById('selectCategory').value = item.categoryId || '';
+            document.getElementById('selectPriority').value = item.priority || 'medium';
+            document.getElementById('inputTags').value = (item.tags || []).join(', ');
+
+            if (item.type === 'note') {
+                document.getElementById('tabNoteBtn').click();
+                document.getElementById('inputContent').value = item.content || '';
+            } else {
+                document.getElementById('tabFileBtn').click();
+                renderSelectedFilesList();
+            }
+
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+
+        /* --- Detail View & Preview Modals --- */
+        function openViewModal(id) {
+            const item = state.items.find(i => i.id === id);
+            if (!item) return;
+
+            const cat = state.categories.find(c => c.id === item.categoryId);
+
+            document.getElementById('viewTitle').textContent = item.title;
+            document.getElementById('viewMeta').textContent = `Ngày tạo: ${formatDate(item.createdAt)} ${item.updatedAt ? '| Cập nhật: ' + formatDate(item.updatedAt) : ''}`;
+            
+            const pBadge = document.getElementById('viewPriorityBadge');
+            pBadge.textContent = item.priority === 'high' ? 'Ưu tiên Cao' : item.priority === 'medium' ? 'Ưu tiên Trung bình' : 'Ưu tiên Thấp';
+            pBadge.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                item.priority === 'high' ? 'bg-red-100 text-red-600' : item.priority === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'
+            }`;
+
+            document.getElementById('viewCategoryBadge').textContent = cat ? cat.name : 'Chưa phân loại';
+
+            const filesSection = document.getElementById('viewFilesSection');
+            const filesList = document.getElementById('viewFilesList');
+            const textContent = document.getElementById('viewTextContent');
+
+            if (item.type === 'file' && item.files && item.files.length > 0) {
+                filesSection.classList.remove('hidden');
+                filesList.innerHTML = '';
+
+                item.files.forEach(f => {
+                    const fileCard = document.createElement('div');
+                    fileCard.className = "p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700/80 flex flex-col justify-between gap-2";
+                    fileCard.innerHTML = `
+                        <div class="flex items-center gap-2.5 truncate">
+                            <div class="text-2xl text-brand-600 shrink-0">
+                                <i class="${getFileIconClass(f.fileType, f.fileName)}"></i>
+                            </div>
+                            <div class="truncate">
+                                <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(f.fileName)}</p>
+                                <p class="text-[10px] text-slate-400">${formatFileSize(f.fileSize)}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-200/50 dark:border-slate-800">
+                            <button onclick="previewSingleFile('${item.id}', '${f.id}')" class="px-2.5 py-1 bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-lg text-xs font-medium hover:bg-brand-100 transition flex items-center gap-1">
+                                <i class="fa-solid fa-eye"></i> Xem
+                            </button>
+                            <button onclick="downloadSingleFile('${item.id}', '${f.id}')" class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        </div>
+                    `;
+                    filesList.appendChild(fileCard);
+                });
+            } else {
+                filesSection.classList.add('hidden');
+            }
+
+            if (item.content) {
+                textContent.classList.remove('hidden');
+                textContent.textContent = item.content;
+            } else if (item.type === 'note') {
+                textContent.classList.remove('hidden');
+                textContent.textContent = 'Không có nội dung ghi chú.';
+            } else {
+                textContent.classList.add('hidden');
+            }
+
+            document.getElementById('viewTagsContainer').innerHTML = (item.tags || []).map(t => 
+                `<span class="text-xs px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">#${escapeHtml(t)}</span>`
+            ).join(' ');
+
+            document.getElementById('btnEditFromView').onclick = () => {
+                closeViewModal();
+                editItem(item.id);
+            };
+
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+
+        /* --- Direct File Preview Modal --- */
+        function previewSingleFile(itemId, fileId) {
+            const item = state.items.find(i => i.id === itemId);
+            if (!item || !item.files) return;
+
+            const file = item.files.find(f => f.id === fileId);
+            if (!file) return;
+
+            state.currentPreviewFile = file;
+
+            document.getElementById('previewFileName').textContent = file.fileName;
+            document.getElementById('previewFileSize').textContent = formatFileSize(file.fileSize);
+            document.getElementById('previewFileIcon').innerHTML = `<i class="${getFileIconClass(file.fileType, file.fileName)}"></i>`;
+            document.getElementById('btnPreviewDownload').onclick = () => downloadFileByData(file.fileData, file.fileName);
+
+            const previewBody = document.getElementById('previewBody');
+            previewBody.innerHTML = '';
+
+            const mime = file.fileType || '';
+            const fileNameLower = file.fileName.toLowerCase();
+
+            if (mime.startsWith('image/')) {
+                previewBody.innerHTML = `<img src="${file.fileData}" alt="${escapeHtml(file.fileName)}" class="max-h-full max-w-full object-contain rounded-lg shadow-md">`;
+            } else if (mime.includes('pdf') || fileNameLower.endsWith('.pdf')) {
+                previewBody.innerHTML = `<iframe src="${file.fileData}" class="w-full h-full rounded-xl border-0"></iframe>`;
+            } else if (mime.startsWith('video/')) {
+                previewBody.innerHTML = `<video controls src="${file.fileData}" class="max-h-full max-w-full rounded-xl"></video>`;
+            } else if (mime.startsWith('audio/')) {
+                previewBody.innerHTML = `
+                    <div class="p-8 bg-slate-800 rounded-2xl flex flex-col items-center gap-4">
+                        <i class="fa-solid fa-music text-5xl text-brand-500"></i>
+                        <audio controls src="${file.fileData}" class="w-80"></audio>
+                    </div>
+                `;
+            } else if (mime.startsWith('text/') || fileNameLower.endsWith('.txt') || fileNameLower.endsWith('.json') || fileNameLower.endsWith('.js') || fileNameLower.endsWith('.html') || fileNameLower.endsWith('.css') || fileNameLower.endsWith('.md')) {
+                // Decode base64 text for preview
+                try {
+                    const textContent = atob(file.fileData.split(',')[1]);
+                    previewBody.innerHTML = `<pre class="w-full h-full p-4 bg-slate-950 text-slate-200 font-mono text-xs overflow-auto rounded-xl leading-relaxed whitespace-pre-wrap">${escapeHtml(textContent)}</pre>`;
+                } catch(e) {
+                    previewBody.innerHTML = `<p class="text-white">Không thể hiển thị bản xem trước văn bản này.</p>`;
+                }
+            } else {
+                // Unsupported inline preview file type
+                previewBody.innerHTML = `
+                    <div class="text-center p-8 bg-slate-800 rounded-2xl max-w-md">
+                        <i class="fa-solid fa-file-circle-exclamation text-5xl text-amber-500 mb-3"></i>
+                        <h4 class="text-base font-bold text-white mb-1">Định dạng không hỗ trợ xem trực tiếp</h4>
+                        <p class="text-xs text-slate-400 mb-4">Bạn có thể tải tệp về máy tính để xem chi tiết bằng ứng dụng phù hợp.</p>
+                        <button onclick="downloadFileByData('${file.fileData}', '${escapeHtml(file.fileName)}')" class="px-4 py-2 bg-brand-600 text-white text-xs font-medium rounded-xl hover:bg-brand-700 transition">
+                            Tải về ngay
+                        </button>
+                    </div>
+                `;
+            }
+
+            document.getElementById('previewModal').classList.remove('hidden');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').classList.add('hidden');
+            document.getElementById('previewBody').innerHTML = '';
+        }
+
+        /* --- Category CRUD --- */
+        async function saveCategoryHandler() {
+            const name = document.getElementById('inputCatName').value.trim();
+            if (!name) { showToast('Vui lòng nhập tên danh mục.', 'error'); return; }
+
+            const catObj = { id: 'cat_' + Date.now(), name, color: state.selectedColor };
+            await saveToStore('categories', catObj);
+            state.categories.push(catObj);
+
+            closeCatModal();
+            renderApp();
+            showToast('Đã thêm danh mục mới!');
+        }
+
+        async function deleteCategory(id) {
+            if (confirm('Xóa danh mục này? Các tài liệu trong danh mục sẽ được chuyển về "Chưa phân loại".')) {
+                await deleteFromStore('categories', id);
+                state.categories = state.categories.filter(c => c.id !== id);
+
+                state.items.forEach(async item => {
+                    if (item.categoryId === id) {
+                        item.categoryId = '';
+                        await saveToStore('items', item);
+                    }
+                });
+
+                if (state.activeFilter.type === 'category' && state.activeFilter.val === id) {
+                    state.activeFilter = { type: 'all', val: null };
+                }
+
+                renderApp();
+                showToast('Đã xóa danh mục.');
+            }
+        }
+
+        /* --- File Download Utilities --- */
+        function downloadSingleFile(itemId, fileId) {
+            const item = state.items.find(i => i.id === itemId);
+            if (!item || !item.files) return;
+            const file = item.files.find(f => f.id === fileId);
+            if (file) downloadFileByData(file.fileData, file.fileName);
+        }
+
+        function downloadFileByData(dataUrl, fileName) {
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = fileName || 'download';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        /* --- Backup & Restore --- */
+        function exportData() {
+            const data = { categories: state.categories, items: state.items, exportedAt: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `work-workspace-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Đã xuất dữ liệu sao lưu thành công!');
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const parsed = JSON.parse(event.target.result);
+                    if (parsed.items && parsed.categories) {
+                        for (let cat of parsed.categories) await saveToStore('categories', cat);
+                        for (let item of parsed.items) await saveToStore('items', item);
+                        
+                        state.categories = await getAllFromStore('categories');
+                        state.items = await getAllFromStore('items');
+                        renderApp();
+                        showToast('Nhập dữ liệu sao lưu thành công!');
+                    } else {
+                        showToast('Cấu trúc file sao lưu không hợp lệ.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Đã xảy ra lỗi khi đọc file JSON.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /* --- Modals Control Helpers --- */
+        function openModal() {
+            state.editingItemId = null;
+            state.selectedFiles = [];
+            document.getElementById('modalTitle').textContent = 'Thêm ghi chú hoặc Tệp mới';
+            document.getElementById('itemForm').reset();
+            document.getElementById('filesListContainer').innerHTML = '';
+            document.getElementById('tabNoteBtn').click();
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('itemModal').classList.add('hidden'); }
+        function closeViewModal() { document.getElementById('viewModal').classList.add('hidden'); }
+        function openCatModal() { document.getElementById('inputCatName').value = ''; document.getElementById('categoryModal').classList.remove('hidden'); }
+        function closeCatModal() { document.getElementById('categoryModal').classList.add('hidden'); }
+
+        /* --- Utility Functions --- */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-lg text-white text-sm flex items-center gap-2 pointer-events-auto transform transition duration-300 translate-y-2 opacity-0 ${
+                type === 'error' ? 'bg-red-600' : 'bg-slate-800 dark:bg-slate-700'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i><span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function getFileIconClass(mimeType, fileName = '') {
+            const name = fileName.toLowerCase();
+            if (mimeType.startsWith('image/')) return 'fa-solid fa-file-image text-emerald-500';
+            if (mimeType.includes('pdf') || name.endsWith('.pdf')) return 'fa-solid fa-file-pdf text-red-500';
+            if (mimeType.includes('word') || name.endsWith('.doc') || name.endsWith('.docx')) return 'fa-solid fa-file-word text-blue-500';
+            if (mimeType.includes('excel') || mimeType.includes('sheet') || name.endsWith('.xls') || name.endsWith('.xlsx')) return 'fa-solid fa-file-excel text-green-600';
+            if (mimeType.includes('zip') || mimeType.includes('compressed') || name.endsWith('.zip') || name.endsWith('.rar')) return 'fa-solid fa-file-zipper text-amber-500';
+            if (mimeType.startsWith('video/')) return 'fa-solid fa-file-video text-purple-500';
+            if (mimeType.startsWith('audio/')) return 'fa-solid fa-file-audio text-pink-500';
+            if (name.endsWith('.js') || name.endsWith('.html') || name.endsWith('.css') || name.endsWith('.py') || name.endsWith('.json')) return 'fa-solid fa-file-code text-cyan-500';
+            return 'fa-solid fa-file-lines text-slate-500';
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function formatDate(isoString) {
+            if (!isoString) return '';
+            const d = new Date(isoString);
+            return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
